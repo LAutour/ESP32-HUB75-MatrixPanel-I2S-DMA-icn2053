@@ -144,9 +144,9 @@ enum clk_clock_t{HZ_5M=5000000, HZ_10M=10000000, HZ_13M=13000000, HZ_20M=2000000
 
 typedef struct{
   #ifdef ADD_VSYNC_OUT
-  uint8_t r1, g1, b1, r2, g2, b2, a, b, c, d, e, lat, oe, clk, vsync;
+  int8_t r1, g1, b1, r2, g2, b2, a, b, c, d, e, lat, oe, clk, vsync;
   #else
-  uint8_t r1, g1, b1, r2, g2, b2, a, b, c, d, e, lat, oe, clk;
+  int8_t r1, g1, b1, r2, g2, b2, a, b, c, d, e, lat, oe, clk;
   #endif
 } hub75_pins_t;
 

@@ -13,6 +13,8 @@ void VirtualMatrixPanel::init(bool serpentine_chain, bool top_down_chain)
 
   _s_chain_party = serpentine_chain; // serpentine, or 'S' chain?
   _chain_top_down = top_down_chain;
+  _mirror_x = top_down_chain;
+  _mirror_y = top_down_chain;
 }
 
 VirtualMatrixPanel::VirtualMatrixPanel(bool serpentine_chain, bool top_down_chain)
@@ -48,7 +50,11 @@ void VirtualMatrixPanel::fillRectBuffer(int16_t x, int16_t y, int16_t w, int16_t
     temp = x;
     x = y;
     y = temp;
-  }else if (m_cfg.chain_length_y == 1)
+  }
+  if (_mirror_y) y = virtualResY - y - h;
+  if (_mirror_x) x = virtualResX - x - w;
+
+  if (m_cfg.chain_length_y == 1)
   {
     //стандартные горизонтальные последовательно соединенные панели
     MatrixPanel_I2S_DMA::fillRectBuffer(x,y,w,h);
@@ -104,10 +110,17 @@ void VirtualMatrixPanel::fillRectBuffer(int16_t x, int16_t y, int16_t w, int16_t
 
 void VirtualMatrixPanel::setRotate(bool rotate) 
 {
-	_rotate=rotate;	
-		// We don't support rotation by degrees.
-    setRotation(rotate & 1); 
+	_rotate = rotate;	
+	// We don't support rotation by degrees.
+  setRotation(rotate & 1); 
 }
 
+void VirtualMatrixPanel::setMirrorX(bool mirror_x) 
+{
+	_mirror_x = _chain_top_down ^ mirror_x;	
+}
 
-
+void VirtualMatrixPanel::setMirrorY(bool mirror_y) 
+{
+	_mirror_y = _chain_top_down ^ mirror_y;	
+}

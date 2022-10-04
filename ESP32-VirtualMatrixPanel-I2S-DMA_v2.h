@@ -31,13 +31,19 @@ class VirtualMatrixPanel
     virtual void fillRectBuffer(int16_t x, int16_t y, int16_t w, int16_t h);
 		
   // Rotate display
-  void setRotate(bool rotate);	
+  void setRotate(bool rotate);
+  // Mirror display
+  void setMirrorX(bool mirror_x);
+  void setMirrorY(bool mirror_y);
 
   private:
     bool _s_chain_party  = true; // Are we chained? Ain't no party like a... 
     bool _chain_top_down = false; // is the ESP at the top or bottom of the matrix of devices?
+    bool _mirror_x = false;
+    bool _mirror_y = false;
+	  bool _rotate = false;
     void init(bool serpentine_chain, bool top_down_chain);
-	bool _rotate = false;
 }; // end Class header
 
 #endif
+

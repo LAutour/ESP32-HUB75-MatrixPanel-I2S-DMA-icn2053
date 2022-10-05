@@ -86,9 +86,9 @@ void setup() {
     .color_depth = COLORx16//PIXEL_COLOR_DEPTH, 
   };
 
-  //Создание виртуальной матрицы
+  //Create virtual panel
   dma_display = new VirtualMatrixPanel(mxconfig);
-  //Создание обычной последовательной матрицы
+  //Or line panel, if chain_length_y = 1 (for support rotate and mirors - use virtual panel)
   //dma_display = new MatrixPanel_I2S_DMA(mxconfig);
 
 
@@ -102,7 +102,7 @@ void setup() {
   // well, hope we are OK, let's draw some colors first :)
   Serial.println("Fill screen: RED");
   dma_display->fillScreenRGB888(255, 0, 0);
-  dma_display->flipDMABuffer();
+  dma_display->flipDMABuffer(); //for iСЃn2053 function flipDMABuffer() is always used, regardless of the value of double_buff
   delay(1000);
 
   Serial.println("Fill screen: GREEN");

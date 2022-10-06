@@ -176,7 +176,7 @@ int icn2053setOEaddrBuffer(ESP32_I2S_DMA_STORAGE_TYPE* buffer, int offset, uint8
 }
 
 //установка заголовка кадра в буфере
-int icn2053setVSyncBuffer(ESP32_I2S_DMA_STORAGE_TYPE* vsync_buffer, int offset, bool leds_enable)
+int icn2053setVSyncBuffer(ESP32_I2S_DMA_STORAGE_TYPE* vsync_buffer, int offset, bool leds_enable, bool vsync)
 {	  
 	//if (vsync_buffer == NULL) return;
  	offset = data_clr(vsync_buffer, offset, BIT_LAT, ICN2053_CMD_DELAY); 
@@ -192,7 +192,10 @@ int icn2053setVSyncBuffer(ESP32_I2S_DMA_STORAGE_TYPE* vsync_buffer, int offset, 
     offset = data_set(vsync_buffer, offset, BIT_LAT, ICN2053_DIS_OP);
   }  
   offset = data_clr(vsync_buffer, offset, BIT_LAT, n); 
-	offset = data_set(vsync_buffer, offset, BIT_LAT, ICN2053_V_SYNC); 
+  if (leds_enable)
+	  offset = data_set(vsync_buffer, offset, BIT_LAT, ICN2053_V_SYNC); 
+  else
+    offset = data_clr(vsync_buffer, offset, BIT_LAT, ICN2053_V_SYNC); 
 	offset = data_clr(vsync_buffer, offset, BIT_LAT, ICN2053_CMD_DELAY); 
   offset = data_set(vsync_buffer, offset, BIT_LAT, ICN2053_PRE_ACT);
   offset = data_clr(vsync_buffer, offset, BIT_LAT, ICN2053_CMD_DELAY);
@@ -200,9 +203,9 @@ int icn2053setVSyncBuffer(ESP32_I2S_DMA_STORAGE_TYPE* vsync_buffer, int offset, 
 }
 
 //установка заголовка кадра
-void MatrixPanel_I2S_DMA::icn2053setVSync(bool leds_enable)
+void MatrixPanel_I2S_DMA::icn2053setVSync(bool leds_enable, bool vsync)
 {
-  icn2053setVSyncBuffer(dma_buff.rowBits[offset_prefix], FRAME_ADD_LEN, leds_enable);
+  icn2053setVSyncBuffer(dma_buff.rowBits[offset_prefix], FRAME_ADD_LEN, leds_enable, vsync);
 }
 
 //установка значений конфигурационных регистров

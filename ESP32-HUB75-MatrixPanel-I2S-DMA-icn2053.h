@@ -99,6 +99,8 @@ class MatrixPanel_I2S_DMA {
     virtual void setColor(uint16_t color);
     virtual void setColor(uint8_t r, uint8_t g, uint8_t b);
     void setTextColorRGB(uint8_t r, uint8_t g, uint8_t b);
+    //рисование сглаженной линии с полутонами
+    void writeLineAA(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
 
     #ifdef USE_GFX_ROOT
 	  // 24bpp FASTLED CRGB colour struct support
@@ -150,9 +152,9 @@ class MatrixPanel_I2S_DMA {
     //переключить драйвера матрицы на отправленный кадр c отправкой одного из регистров конфигурации
     void sendVsync();
     //выключить вывод драйверов матрицы
-    void panelOn();
+    void panelShowOn();
     //включить вывод драйверов матрицы
-    void panelOff();
+    void panelShowOff();
     //ждать готовность dma для новой отправки данных
     void waitDmaReady();
     //void setpalleteRGB(palleteRGB_p palleteRGB);
@@ -186,7 +188,8 @@ class MatrixPanel_I2S_DMA {
     void sendCBRow(uint8_t buff_id);
     //отрисовка залитого прямоугольника
     virtual void fillRectBuffer(int16_t x, int16_t y, int16_t w, int16_t h);
-
+    //рисование точки с условным обменом координат
+    void _steepDrawPixelRGB(bool steep, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b);
 
    // ------- PRIVATE -------
   private:    
@@ -254,8 +257,8 @@ class MatrixPanel_I2S_DMA {
     void icn2053init();
     //заполнение префикса данными конфигурационного регистра
     void icn2053setReg(uint8_t reg_idx, driver_rgb_t* regs_data);
-    //вкл\выкл экрана в префиксе
-    void icn2053setVSync(bool leds_enable);
+    //вкл\выкл экрана и смкены кадра в префиксе
+    void icn2053setVSync(bool leds_enable, bool vsync);
 
     //установка пользовательской процедуры выдачи цвета пикселя по запросу формирования DMA строки
     void setDMAGetUserRGB(getUserRGB_p _getUserRGB);  

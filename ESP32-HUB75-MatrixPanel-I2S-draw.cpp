@@ -2,6 +2,28 @@
 #include "ESP32-HUB75-MatrixPanel-I2S-DMA-icn2053.h"
 #include "ESP32-HUB75-MatrixPanel-leddrivers_v2.h"
 
+#ifndef _swap_int16_t
+#define _swap_int16_t(a, b)                                                    \
+  {                                                                            \
+    int16_t t = a;                                                             \
+    a = b;                                                                     \
+    b = t;                                                                     \
+  }
+#endif
+
+#ifndef ABS
+#define ABS(a)  (a >= 0)?(a):(-(a))  
+#endif
+
+#ifndef MIN
+#define MIN(a,b) ((a) < (b))?(a):(b)  
+#endif
+
+#ifndef MAX
+#define MIN(a,b) ((a) > (b))?(a):(b)  
+#endif
+
+
 //вынесенные процедуры отрисовки
 
 void MatrixPanel_I2S_DMA::setColor(uint8_t r, uint8_t g, uint8_t b)
@@ -181,5 +203,67 @@ void MatrixPanel_I2S_DMA::drawIcon (int *ico, int16_t x, int16_t y, int16_t cols
   }  
 }
 
+void MatrixPanel_I2S_DMA::_steepDrawPixelRGB(bool steep, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b)
+{
+  if (steep) drawPixelRGB888(y,x,r,g,b);
+  else drawPixelRGB888(x,y,r,g,b);
+}
 
+//Wu's line algorithm, fix point version
+void MatrixPanel_I2S_DMA::writeLineAA(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) 
+{
+  int32_t dx = x1 - x0; 
+  if (dx < 0) dx = -dx;
+  int32_t dy = y1 - y0; 
+  if (dy < 0) dy = -dy;
+  if (dx == 0) 
+  {
+    drawFastVLine(x0, min(y0,y1), dy, color);
+    return;
+  }
+  if (dy == 0) 
+  {
+    drawFastHLine(min(x0,x1), y0, dx, color);
+    return;
+  }
+  if (dy == dx)
+  {
+    drawLine(x0,y0,x1,y1, color);
+    return;
+  }
 
+  bool steep = dy > dx;
+  if (steep)
+  {
+    _swap_int16_t(x0, y0);
+    _swap_int16_t(x1, y1);
+    _swap_int16_t(dx, dy);
+  }
+  if (x0 > x1)
+  {
+    _swap_int16_t(x0, x1);
+    _swap_int16_t(y0, y1);
+  }
+  rgb888_t c;
+  color565to888(color, c.r, c.g, c.b);
+
+  _steepDrawPixelRGB(steep, x0, y0, c.r, c.g, c.b);
+  _steepDrawPixelRGB(steep, x1, y1, c.r, c.g, c.b);
+  
+  dy <<= 16;
+  int32_t gradient = dy / dx;
+  int32_t y = (y0 << 16) + gradient;
+  int16_t gcolor;
+  rgb888_t g;
+  for (int x = x0 + 1; x <= x1 - 1; x++)
+  {
+    gcolor = (y >> 8)& 255;
+    g.r = (c.r * gcolor) >> 8;
+    g.g = (c.g * gcolor) >> 8;
+    g.b = (c.b * gcolor) >> 8;
+    int16_t _y =  y >> 16;
+    _steepDrawPixelRGB(steep, x, _y, c.r-g.r, c.g-g.g, c.b-g.b);
+    _steepDrawPixelRGB(steep, x, _y + 1, g.r, g.g, g.b);
+    y += gradient;
+  }
+}

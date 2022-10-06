@@ -164,36 +164,41 @@ IRAM_ATTR void MatrixPanel_I2S_DMA::prepareDmaRows(uint8_t row_offset, uint8_t d
 }
 
 
-void MatrixPanel_I2S_DMA::panelOff()
+void MatrixPanel_I2S_DMA::panelShowOff()
 {
-  return;
   if (m_cfg.driver == ICN2053)
   {
-    while(!bufferReady)
-    {
-      delay(1);
-    };
-    //icn2053setVSyncBuffer(false, &dma_buff.rowBits[offset_prefix][FRAME_ADD_LEN]);
+    //можно проще, но тогда нужно городить еще DMA буфер и переключение на него только для одной команды
+    waitDmaReady();
+    icn2053setVSync(false, false);
     sendVsync();
+    waitDmaReady();
+    icn2053setVSync(false, true);
+  }else
+  {
+    //shift
   }
 }
 
-void MatrixPanel_I2S_DMA::panelOn()
+void MatrixPanel_I2S_DMA::panelShowOn()
 {
-  return;
   if (m_cfg.driver == ICN2053)
   {
-    while(!bufferReady){};
-    //icn2053setVSyncBuffer(true, &dma_buff.rowBits[offset_prefix][FRAME_ADD_LEN]);
+    //можно проще, но тогда нужно городить еще DMA буфер и переключение на него только для одной команды
+    waitDmaReady();
+    icn2053setVSync(true, false);
     sendVsync();
+    waitDmaReady();
+    icn2053setVSync(true, true);    
+  }else
+  {
+    //shift
   }
 }
 
 //подготовка префикса и переключение DMA вывода
 IRAM_ATTR void MatrixPanel_I2S_DMA::sendCBVsync()
 {
-  //static int idx_reg = 0; //индекс текущих регистров инициализации драйверов
-
   icn2053setReg(driver_cur_reg, (&driver_reg[driver_cur_reg]));
   driver_cur_reg++;
   if (driver_cur_reg >= ICN2053_REG_CNT) driver_cur_reg = 0;
@@ -350,15 +355,19 @@ void MatrixPanel_I2S_DMA::sendFrame(bool waitSend, bool autoVsync)
 //инициализация регистров управления драйверами с очисткой экрана
 void MatrixPanel_I2S_DMA::icn2053init()
 {
-  icn2053setVSync(false); //запретить вывод изображения
+  icn2053setVSync(false, true); //запретить вывод изображения
   for (int i = 0; i < ICN2053_REG_CNT; i++)
   {
     sendVsync();
     //Serial.println(F("4"));
   }
+  //один буфер драйвера
   icn2053_clear= true;
   sendFrame();
-  icn2053setVSync(true); //разрешить вывод изображения
+  //второй буфер драйвера
+  icn2053_clear= true;
+  sendFrame();  
+  icn2053setVSync(true, true); //разрешить вывод изображения
   sendVsync();
 }
 
@@ -381,7 +390,7 @@ bool MatrixPanel_I2S_DMA::allocateDMAmemory()
     //двойной видеобуфер встроен в драйвер матрицы, переключение по V_SYNC c инициализацией одного из регистров    
     //переключение буфера драйвера матрицы совмещеено с передайче регистров
     back_buffer_id = m_cfg.double_buff;
-    gamma_table_len = sizeof(Translate8To16Bit);
+    gamma_table_len = BRIGHT_TABLE_SIZE;
 
     //буфер префикса   
     dma_buff.frame_prefix_len = FRAME_ADD_LEN + ICN2053_PREFIX_START_LEN + pixels_per_row;
@@ -908,7 +917,7 @@ void MatrixPanel_I2S_DMA::clearBuffer(uint8_t _buff_id)
   {    
     if (initialized &(_buff_id == 0))
     {
-      panelOff();
+      panelShowOff();
       //запускаем очистку первого фрейма в памяти драйверов экрана
       waitDmaReady();
       icn2053_clear = true;
@@ -924,7 +933,7 @@ void MatrixPanel_I2S_DMA::clearBuffer(uint8_t _buff_id)
       waitDmaReady();
       icn2053_clear = true;
       sendFrame();
-      panelOn();
+      panelShowOn();
     }    
   }else
   {
@@ -1048,17 +1057,19 @@ IRAM_ATTR void MatrixPanel_I2S_DMA::flipDMABuffer()
 
 void MatrixPanel_I2S_DMA::setPanelBrightness(int b)
 {
-  // Change to set the brightness of the display, range of 1 to matrixWidth (i.e. 1 - 64)
   if (!initialized) return;
   waitDmaReady();
-  Serial.println(b);
+  #ifdef SERIAL_DEBUG 
+    Serial.print("Set brightness ");
+    Serial.println(b);
+  #endif    
+  //Serial.println(b);
   if (brightness_table != NULL)
   {
     uint32_t g;    
-    for(int i = sizeof(Translate8To16Bit)-1; i >= 0; i--)
+    for(int i = BRIGHT_TABLE_SIZE-1; i >= 0; i--)
     {
-      g = Translate8To16Bit[i];
-      brightness_table[i] = (g*lumConvTab[b] >> 8);
+      brightness_table[i] = (lumConvTab[b]|(lumConvTab[b]<<8))*i/(BRIGHT_TABLE_SIZE-1);
     }
   }else
   {
@@ -1088,5 +1099,3 @@ void MatrixPanel_I2S_DMA::setDrawUserPixel(drawUserPixel_p _drawUserPixel)
 {
   drawUserPixel = _drawUserPixel;
 }
-
-

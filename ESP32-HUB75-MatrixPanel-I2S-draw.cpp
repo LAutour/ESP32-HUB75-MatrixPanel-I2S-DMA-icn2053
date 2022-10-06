@@ -237,7 +237,6 @@ void MatrixPanel_I2S_DMA::writeLineAA(int16_t x0, int16_t y0, int16_t x1, int16_
   {
     _swap_int16_t(x0, y0);
     _swap_int16_t(x1, y1);
-    _swap_int16_t(dx, dy);
   }
   if (x0 > x1)
   {
@@ -250,8 +249,7 @@ void MatrixPanel_I2S_DMA::writeLineAA(int16_t x0, int16_t y0, int16_t x1, int16_
   _steepDrawPixelRGB(steep, x0, y0, c.r, c.g, c.b);
   _steepDrawPixelRGB(steep, x1, y1, c.r, c.g, c.b);
   
-  dy <<= 16;
-  int32_t gradient = dy / dx;
+  int32_t gradient = ((y1-y0)<< 16)/(x1-x0);
   int32_t y = (y0 << 16) + gradient;
   int16_t gcolor;
   rgb888_t g;
